@@ -1201,7 +1201,9 @@ def _collection_stat_rows(entries, value_getter):
 def build_collection_statistics_context(request):
     """Build the collection statistics page context."""
     media_type = request.GET.get("type", "").strip()
-    if media_type == "all":
+    if media_type == "all" or (
+        media_type and media_type not in MediaTypes.values
+    ):
         media_type = ""
     entries_qs = helpers.get_user_collection(request.user, media_type or None)
     entries = list(entries_qs)

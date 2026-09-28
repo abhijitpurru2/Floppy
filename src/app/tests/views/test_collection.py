@@ -932,6 +932,25 @@ class CollectionStatisticsViewTest(TestCase):
         self.assertEqual(response.context["entry_count"], 1)
         self.assertEqual(response.context["total_spent"], Decimal("59.99"))
 
+    def test_collection_stats_ignores_invalid_media_type_filter(self):
+        """An invalid stats filter falls back to the unfiltered collection."""
+        CollectionEntry.objects.create(
+            user=self.user,
+            item=self.movie,
+            media_type="bluray",
+            purchase_price=Decimal("19.99"),
+        )
+        self.client.login(**self.credentials)
+
+        response = self.client.get(
+            reverse("collection_stats"),
+            {"type": "not-a-media-type"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_media_type"], "")
+        self.assertEqual(response.context["entry_count"], 1)
+
 
 class CollectionModalViewTest(TestCase):
     """Test collection modal view."""
