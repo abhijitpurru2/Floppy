@@ -1301,14 +1301,16 @@ def build_collection_statistics_context(request):
                 }
             )
 
-    available_media_types = sorted(
-        set(
-            CollectionEntry.objects.filter(user=request.user)
-            .order_by()
-            .values_list("item__media_type", flat=True)
-            .distinct(),
-        ),
-    )
+    if media_type:
+        available_media_types = [media_type]
+    else:
+        available_media_types = sorted(
+            set(
+                entries_qs.order_by()
+                .values_list("item__media_type", flat=True)
+                .distinct(),
+            ),
+        )
     return {
         "selected_media_type": media_type,
         "media_types": available_media_types,
