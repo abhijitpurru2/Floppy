@@ -10,7 +10,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db.utils import OperationalError
-from django.template.loader import render_to_string
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -4113,15 +4112,7 @@ class MediaDetailsViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        context = response.context[-1].flatten()
-        context["current_instance"] = book
-        context["user_medias"] = [book]
-        secondary_html = render_to_string(
-            "app/components/detail_secondary_content.html",
-            context,
-            request=response.wsgi_request,
-        )
-        self.assertIn("Read Time: 1h 35min", secondary_html)
+        self.assertContains(response, "Read Time: 1h 35min")
 
     @patch("app.providers.services.get_media_metadata")
     def test_game_media_details_renders_activity_subtitle_without_stats_cards(
