@@ -422,14 +422,30 @@ class MediaForm(RatingScaleFormMixin, forms.ModelForm):
         return (self.cleaned_data.get("image_url") or "").strip()
 
 
-class MangaForm(MediaForm):
-    """Form for manga."""
+class ReadingMediaForm(MediaForm):
+    """Shared form behaviour for reading media with an optional read-time metric."""
 
     read_time_minutes = CustomDurationField(
         required=False,
         widget=forms.TextInput(attrs={"placeholder": _("hh:mm or 111 minutes")}),
         label=_("Read Time"),
     )
+
+    def __init__(self, *args, **kwargs):
+        """Format an existing read-time value for the form field."""
+        super().__init__(*args, **kwargs)
+        if (
+            not self.is_bound
+            and self.instance
+            and getattr(self.instance, "read_time_minutes", 0) > 0
+        ):
+            self.initial["read_time_minutes"] = helpers.minutes_to_hhmm(
+                self.instance.read_time_minutes
+            )
+
+
+class MangaForm(ReadingMediaForm):
+    """Form for manga."""
 
     class Meta(MediaForm.Meta):
         """Bind form to model."""
@@ -451,7 +467,6 @@ class MangaForm(MediaForm):
 
     def __init__(self, *args, **kwargs):
         """Initialize the form."""
-        kwargs.pop("max_progress", None)
         super().__init__(*args, **kwargs)
 
         # Adjust progress field for percentage mode
@@ -459,14 +474,6 @@ class MangaForm(MediaForm):
             self.fields["progress"].label = _("Progress (%)")
             self.fields["progress"].widget.attrs.update(
                 {"min": 0, "max": 100, "step": 0.1, "placeholder": "%"}
-            )
-        if (
-            not self.is_bound
-            and self.instance
-            and getattr(self.instance, "read_time_minutes", 0) > 0
-        ):
-            self.initial["read_time_minutes"] = helpers.minutes_to_hhmm(
-                self.instance.read_time_minutes
             )
 
 
@@ -544,14 +551,8 @@ class BoardgameForm(MediaForm):
         }
 
 
-class BookForm(MediaForm):
+class BookForm(ReadingMediaForm):
     """Form for books."""
-
-    read_time_minutes = CustomDurationField(
-        required=False,
-        widget=forms.TextInput(attrs={"placeholder": _("hh:mm or 111 minutes")}),
-        label=_("Read Time"),
-    )
 
     class Meta(MediaForm.Meta):
         """Bind form to model."""
@@ -573,7 +574,6 @@ class BookForm(MediaForm):
 
     def __init__(self, *args, **kwargs):
         """Initialize the form."""
-        kwargs.pop("max_progress", None)
         super().__init__(*args, **kwargs)
 
         # Adjust progress field for percentage mode
@@ -582,24 +582,10 @@ class BookForm(MediaForm):
             self.fields["progress"].widget.attrs.update(
                 {"min": 0, "max": 100, "step": 0.1, "placeholder": "%"}
             )
-        if (
-            not self.is_bound
-            and self.instance
-            and getattr(self.instance, "read_time_minutes", 0) > 0
-        ):
-            self.initial["read_time_minutes"] = helpers.minutes_to_hhmm(
-                self.instance.read_time_minutes
-            )
 
 
-class ComicForm(MediaForm):
+class ComicForm(ReadingMediaForm):
     """Form for comics."""
-
-    read_time_minutes = CustomDurationField(
-        required=False,
-        widget=forms.TextInput(attrs={"placeholder": _("hh:mm or 111 minutes")}),
-        label=_("Read Time"),
-    )
 
     class Meta(MediaForm.Meta):
         """Bind form to model."""
@@ -621,7 +607,6 @@ class ComicForm(MediaForm):
 
     def __init__(self, *args, **kwargs):
         """Initialize the form."""
-        kwargs.pop("max_progress", None)
         super().__init__(*args, **kwargs)
 
         # Adjust progress field for percentage mode
@@ -629,14 +614,6 @@ class ComicForm(MediaForm):
             self.fields["progress"].label = _("Progress (%)")
             self.fields["progress"].widget.attrs.update(
                 {"min": 0, "max": 100, "step": 0.1, "placeholder": "%"}
-            )
-        if (
-            not self.is_bound
-            and self.instance
-            and getattr(self.instance, "read_time_minutes", 0) > 0
-        ):
-            self.initial["read_time_minutes"] = helpers.minutes_to_hhmm(
-                self.instance.read_time_minutes
             )
 
 
