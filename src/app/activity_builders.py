@@ -92,6 +92,11 @@ def _build_detail_activity_subtitle(
             getattr(current_instance, "read_time_minutes", 0),
             "read",
         )
+        if duration_text:
+            primary_text = (
+                f"{primary_text} • {duration_text}" if primary_text else duration_text
+            )
+            duration_text = None
     elif media_type == MediaTypes.GAME.value:
         progress_value = (
             getattr(current_instance, "formatted_aggregated_progress", None)
