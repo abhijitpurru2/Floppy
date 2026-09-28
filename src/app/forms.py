@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from app import config
+from app import config, helpers
 from app.models import (
     TV,
     AlbumTracker,
@@ -465,7 +465,7 @@ class MangaForm(MediaForm):
             and self.instance
             and getattr(self.instance, "read_time_minutes", 0) > 0
         ):
-            self.initial["read_time_minutes"] = app.helpers.minutes_to_hhmm(
+            self.initial["read_time_minutes"] = helpers.minutes_to_hhmm(
                 self.instance.read_time_minutes
             )
 
@@ -587,7 +587,7 @@ class BookForm(MediaForm):
             and self.instance
             and getattr(self.instance, "read_time_minutes", 0) > 0
         ):
-            self.initial["read_time_minutes"] = app.helpers.minutes_to_hhmm(
+            self.initial["read_time_minutes"] = helpers.minutes_to_hhmm(
                 self.instance.read_time_minutes
             )
 
@@ -635,7 +635,7 @@ class ComicForm(MediaForm):
             and self.instance
             and getattr(self.instance, "read_time_minutes", 0) > 0
         ):
-            self.initial["read_time_minutes"] = app.helpers.minutes_to_hhmm(
+            self.initial["read_time_minutes"] = helpers.minutes_to_hhmm(
                 self.instance.read_time_minutes
             )
 
