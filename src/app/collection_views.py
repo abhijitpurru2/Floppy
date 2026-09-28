@@ -2,7 +2,7 @@ import json
 import logging
 import math
 from collections import Counter, defaultdict
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.apps import apps
 from django.conf import settings
@@ -1172,7 +1172,10 @@ def build_collection_entry_context(request, entry, *, return_url=""):
 
 def _quantize_currency(value):
     """Return a two-decimal Decimal for collection totals."""
-    return (value or Decimal(0)).quantize(Decimal("0.01"))
+    return (value or Decimal(0)).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
 
 
 def _bucket_label(value):
@@ -1252,6 +1255,7 @@ def build_collection_statistics_context(request):
         media_type and media_type not in MediaTypes.values
     ):
         media_type = ""
+    full_collection_qs = helpers.get_user_collection(request.user)
     entries_qs = helpers.get_user_collection(request.user, media_type or None)
     aggregate_summary = entries_qs.aggregate(
         entry_count=Count("id"),
@@ -1306,22 +1310,22 @@ def build_collection_statistics_context(request):
                 }
             )
 
-    if media_type:
-        available_media_types = [media_type]
-    else:
-        available_media_types = sorted(
-            set(
-                entries_qs.order_by()
-                .values_list("item__media_type", flat=True)
-                .distinct(),
-            ),
-        )
+    available_media_types = sorted(
+        set(
+            full_collection_qs.order_by()
+            .values_list("item__media_type", flat=True)
+            .distinct(),
+        ),
+    )
     return {
         "selected_media_type": media_type,
         "media_types": available_media_types,
         "entry_count": aggregate_summary["entry_count"],
         "total_spent": total_spent,
-        "by_media_type": _queryset_stat_rows(entries_qs, field_name="item__media_type"),
+        "by_media_type": _queryset_stat_rows(
+            full_collection_qs,
+            field_name="item__media_type",
+        ),
         "by_format": _queryset_stat_rows(entries_qs, field_name="media_type"),
         "by_resolution": _queryset_stat_rows(entries_qs, field_name="resolution"),
         "by_purchase_location": _queryset_stat_rows(
