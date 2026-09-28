@@ -56,9 +56,7 @@ class ReadingAnimeHistoryDayTests(TestCase):
         )
 
     def test_book_and_anime_render_with_score(self):
-        book = self._make(Book, MediaTypes.BOOK.value, "book-1", "A Book", 9)
-        book.read_time_minutes = 95
-        book.save(update_fields=["read_time_minutes"])
+        self._make(Book, MediaTypes.BOOK.value, "book-1", "A Book", 9)
         self._make(Anime, MediaTypes.ANIME.value, "anime-1", "An Anime", 7)
 
         day = history_cache.build_history_day(self.user, self.day_key)
@@ -68,7 +66,6 @@ class ReadingAnimeHistoryDayTests(TestCase):
         self.assertIn(MediaTypes.BOOK.value, by_type)
         self.assertIn(MediaTypes.ANIME.value, by_type)
         self.assertEqual(by_type[MediaTypes.BOOK.value]["score"], 9)
-        self.assertEqual(by_type[MediaTypes.BOOK.value]["runtime_display"], "1h 35min")
         self.assertEqual(by_type[MediaTypes.ANIME.value]["score"], 7)
         self.assertEqual(
             by_type[MediaTypes.ANIME.value]["status"], Status.COMPLETED.value

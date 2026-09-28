@@ -4067,7 +4067,6 @@ class MediaDetailsViewTests(TestCase):
                     response,
                     "Progress: 120/320",
                     "2026-03-01 - 2026-03-12",
-                    "1h 35min read",
                 )
 
     @patch("app.providers.services.get_media_metadata")

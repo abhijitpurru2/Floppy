@@ -502,12 +502,8 @@ def _build_reading_entries(
                 "episode_label": None,
                 "episode_code": None,
                 "played_at_local": played_at_local,
-                "runtime_minutes": getattr(reading_entry, "read_time_minutes", 0) or 0,
-                "runtime_display": helpers.minutes_to_hhmm(
-                    getattr(reading_entry, "read_time_minutes", 0) or 0
-                )
-                if getattr(reading_entry, "read_time_minutes", 0)
-                else None,
+                "runtime_minutes": 0,
+                "runtime_display": None,
                 "instance_id": reading_entry.id,
                 "entry_key": f"{item.media_type}-{reading_entry.id}",
             }

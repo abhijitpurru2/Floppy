@@ -56,7 +56,6 @@ def _build_detail_activity_subtitle(
         or getattr(current_instance, "aggregated_end_date", None)
         or getattr(current_instance, "end_date", None)
     )
-    detail_text = None
     duration_text = None
     collapse_same_day = bool(play_stats.get("same_play_day"))
 
@@ -89,16 +88,6 @@ def _build_detail_activity_subtitle(
             getattr(current_instance, "formatted_progress", None),
             include_max=True,
         )
-        duration_text = _format_detail_activity_duration(
-            getattr(current_instance, "read_time_minutes", 0),
-            "read",
-        )
-        if primary_text or duration_text:
-            detail_text = (
-                f"{primary_text} • {duration_text}"
-                if primary_text and duration_text
-                else primary_text or duration_text
-            )
     elif media_type == MediaTypes.GAME.value:
         progress_value = (
             getattr(current_instance, "formatted_aggregated_progress", None)
@@ -138,7 +127,6 @@ def _build_detail_activity_subtitle(
 
     return {
         "primary_text": primary_text,
-        "detail_text": detail_text,
         "date_start": date_start,
         "date_end": date_end,
         "duration_text": duration_text,

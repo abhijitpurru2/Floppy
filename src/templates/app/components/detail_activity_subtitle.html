@@ -13,25 +13,7 @@
             hx-target="#session-history-modal-host"
             hx-swap="innerHTML"
             @click="$dispatch('open-session-history')">
-      {% if activity_subtitle.detail_text %}
-        <span>{{ activity_subtitle.detail_text|translate_activity_text:media_type }}</span>
-        {% if activity_subtitle.date_start or activity_subtitle.date_end %}
-          <span class="mx-1 text-gray-600">•</span>
-          <span>
-            {% if activity_subtitle.date_start and activity_subtitle.date_end %}
-              {% if activity_subtitle.collapse_same_day or activity_subtitle.date_start == activity_subtitle.date_end %}
-                {{ activity_subtitle.date_start|user_date_format:user }}
-              {% else %}
-                {{ activity_subtitle.date_start|user_date_format:user }} - {{ activity_subtitle.date_end|user_date_format:user }}
-              {% endif %}
-            {% elif activity_subtitle.date_start %}
-              {{ activity_subtitle.date_start|user_date_format:user }}
-            {% else %}
-              {{ activity_subtitle.date_end|user_date_format:user }}
-            {% endif %}
-          </span>
-        {% endif %}
-      {% elif activity_subtitle.duration_text %}
+      {% if activity_subtitle.duration_text %}
         <span class="inline-flex items-center">
           <span>
             {{ activity_subtitle.duration_text|cut:" watched"|cut:" played"|cut:" listened"|cut:" read" }}{% if activity_subtitle.primary_text %} ({{ activity_subtitle.primary_text|cut:"Progress: "|translate_activity_text:media_type }}){% endif %}
@@ -83,11 +65,7 @@
             hx-target="#session-history-modal-host"
             hx-swap="innerHTML"
             @click="$dispatch('open-session-history')">
-      {% if activity_subtitle.detail_text %}
-        <span>
-          {{ activity_subtitle.detail_text|translate_activity_text:media_type }}
-        </span>
-      {% elif activity_subtitle.primary_text %}
+      {% if activity_subtitle.primary_text %}
         <span>
           {{ activity_subtitle.primary_text|translate_activity_text:media_type }}
         </span>
