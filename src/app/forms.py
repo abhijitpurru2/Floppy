@@ -433,6 +433,7 @@ class ReadingMediaForm(MediaForm):
 
     def __init__(self, *args, **kwargs):
         """Format an existing read-time value for the form field."""
+        kwargs.pop("max_progress", None)
         super().__init__(*args, **kwargs)
         if (
             not self.is_bound
