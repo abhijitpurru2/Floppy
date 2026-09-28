@@ -339,6 +339,9 @@ class Media(models.Model):
     @property
     def formatted_read_time(self):
         """Return an optional formatted read time for media that tracks it."""
+        read_time_minutes = getattr(self, "read_time_minutes", 0)
+        if read_time_minutes > 0:
+            return app.helpers.minutes_to_hhmm(read_time_minutes)
         return None
 
     def _get_known_item_runtime_minutes(self):
@@ -761,13 +764,6 @@ class Manga(Media):
         """Return the unit `progress` is measured in."""
         return "percentage" if self.progress_is_percentage else "chapters"
 
-    @property
-    def formatted_read_time(self):
-        """Return the recorded read time in a human-readable format."""
-        if self.read_time_minutes > 0:
-            return app.helpers.minutes_to_hhmm(self.read_time_minutes)
-        return None
-
     def increase_progress(self):
         """Increase progress, respecting the percentage tracking preference."""
         _percentage_increase_progress(self)
@@ -1087,13 +1083,6 @@ class Book(Media):
             return app.helpers.minutes_to_hhmm(max_progress)
         return super().formatted_max_progress
 
-    @property
-    def formatted_read_time(self):
-        """Return the recorded read time in a human-readable format."""
-        if self.read_time_minutes > 0:
-            return app.helpers.minutes_to_hhmm(self.read_time_minutes)
-        return None
-
     def increase_progress(self):
         """Increase progress, respecting the percentage tracking preference."""
         _percentage_increase_progress(self)
@@ -1123,13 +1112,6 @@ class Comic(Media):
     def progress_unit(self):
         """Return the unit `progress` is measured in."""
         return "percentage" if self.progress_is_percentage else "issues"
-
-    @property
-    def formatted_read_time(self):
-        """Return the recorded read time in a human-readable format."""
-        if self.read_time_minutes > 0:
-            return app.helpers.minutes_to_hhmm(self.read_time_minutes)
-        return None
 
     def increase_progress(self):
         """Increase progress, respecting the percentage tracking preference."""
