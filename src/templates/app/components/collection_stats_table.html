@@ -15,7 +15,7 @@
           <tr class="border-t border-[var(--color-border)] first:border-t-0">
             <td class="px-4 py-3 text-[var(--color-text)]">{{ row.label }}</td>
             <td class="px-4 py-3 text-[var(--color-text-secondary)]">{{ row.count }}</td>
-            <td class="px-4 py-3 text-[var(--color-text-secondary)]">${{ row.spent|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-[var(--color-text-secondary)]">{% translate "USD" %} {{ row.spent|floatformat:2 }}</td>
           </tr>
         {% endfor %}
       </tbody>

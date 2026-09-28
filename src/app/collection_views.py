@@ -1276,7 +1276,7 @@ def build_collection_statistics_context(request):
     custom_field_defs = {str(field.id): field for field in custom_fields}
     custom_field_buckets = {field_id: {} for field_id in custom_field_defs}
     for entry in entries:
-        for field_id, value in entry.custom_field_values.items():
+        for field_id, value in (entry.custom_field_values or {}).items():
             if field_id not in custom_field_defs:
                 continue
             label = _bucket_label(value)
