@@ -336,6 +336,14 @@ class Media(models.Model):
             return str(self.aggregated_progress)
         return str(self.progress)
 
+    @property
+    def formatted_read_time(self):
+        """Return an optional formatted read time for media that tracks it."""
+        read_time_minutes = getattr(self, "read_time_minutes", 0)
+        if read_time_minutes > 0:
+            return app.helpers.minutes_to_hhmm(read_time_minutes)
+        return None
+
     def _get_known_item_runtime_minutes(self):
         """Return a persisted runtime value without falling back to estimates."""
         runtime_minutes = getattr(self.item, "runtime_minutes", None)
@@ -739,6 +747,7 @@ class Manga(Media):
     """Model for manga."""
 
     tracker = FieldTracker()
+    read_time_minutes = models.PositiveIntegerField(default=0)
 
     @property
     def formatted_progress(self):
@@ -1036,6 +1045,7 @@ class Book(Media):
     """Model for books."""
 
     tracker = FieldTracker()
+    read_time_minutes = models.PositiveIntegerField(default=0)
 
     @property
     def formatted_progress(self):
@@ -1086,6 +1096,7 @@ class Comic(Media):
     """Model for comics."""
 
     tracker = FieldTracker()
+    read_time_minutes = models.PositiveIntegerField(default=0)
 
     @property
     def formatted_progress(self):

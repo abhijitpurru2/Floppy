@@ -14,7 +14,7 @@
       <p class="text-[var(--color-text-muted)]">{% translate "Add a custom media entry to your collection if it's not available in the database." %}</p>
     </div>
     {# djlint:off #}
-    {% translate "Progress (Episodes)" as media_i18n_40 %}{% translate "Progress (Chapters)" as media_i18n_41 %}{% translate "Progress (Play Time)" as media_i18n_42 %}{% translate "Progress (Pages)" as media_i18n_43 %}{% translate "Progress" as media_i18n_44 %}{% translate "Please select a parent TV show from the dropdown" as media_i18n_45 %}{% translate "Please select a parent Season from the dropdown" as media_i18n_46 %}<form method="post" class="space-y-6" x-data="{
+    {% translate "Progress (Episodes)" as media_i18n_40 %}{% translate "Progress (Chapters)" as media_i18n_41 %}{% translate "Progress (Play Time)" as media_i18n_42 %}{% translate "Progress (Pages)" as media_i18n_43 %}{% translate "Progress" as media_i18n_44 %}{% translate "Please select a parent TV show from the dropdown" as media_i18n_45 %}{% translate "Please select a parent Season from the dropdown" as media_i18n_46 %}{% translate "Read Time" as media_i18n_48 %}<form method="post" class="space-y-6" x-data="{
       mediaType: 'tv',
       placeholderHtml: null,
 
@@ -68,6 +68,9 @@
 
         // Movie, Anime, Manga, Game, Book fields
         else {
+          if (field === 'readTime') {
+            return ['book', 'comic', 'manga'].includes(this.mediaType);
+          }
           return ['title', 'image', 'score', 'progress', 'status', 'startDate', 'endDate', 'notes', 'synopsis'].includes(field);
         }
       },
@@ -302,6 +305,15 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <div x-show="showField('readTime')">
+          <label class="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">{{ media_i18n_48 }}</label>
+          {% translate "hh:mm or 111 minutes" as media_i18n_47 %}
+          <input class="w-full p-2 bg-[var(--color-surface-strong)] rounded-md text-[var(--color-text)] border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] appearance-none"
+                 name="read_time_minutes"
+                 type="text"
+                 placeholder="{{ media_i18n_47 }}">
         </div>
 
         <!-- Status field (TV, Movie, Anime, Manga, Game, Book, Season) -->

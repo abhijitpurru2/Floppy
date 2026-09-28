@@ -4046,6 +4046,7 @@ class MediaDetailsViewTests(TestCase):
                     user=self.user,
                     status=Status.IN_PROGRESS.value,
                     progress=120,
+                    read_time_minutes=95,
                     start_date=datetime(2026, 3, 1, 12, 0, tzinfo=UTC),
                     end_date=datetime(2026, 3, 12, 12, 0, tzinfo=UTC),
                 )
@@ -4067,6 +4068,51 @@ class MediaDetailsViewTests(TestCase):
                     "Progress: 120/320",
                     "2026-03-01 - 2026-03-12",
                 )
+
+    @patch("app.providers.services.get_media_metadata")
+    def test_reading_secondary_fragment_renders_read_time(self, mock_get_metadata):
+        """Reading detail secondary content shows the manual read-time metric."""
+        mock_get_metadata.return_value = {
+            "media_id": "OL200M",
+            "title": "Tracked Book",
+            "media_type": MediaTypes.BOOK.value,
+            "source": Sources.OPENLIBRARY.value,
+            "image": "http://example.com/cover.jpg",
+            "max_progress": 320,
+            "details": {},
+            "related": {},
+        }
+        item = Item.objects.create(
+            media_id="OL200M",
+            source=Sources.OPENLIBRARY.value,
+            media_type=MediaTypes.BOOK.value,
+            title="Tracked Book",
+            image="http://example.com/cover.jpg",
+        )
+        book = Book.objects.create(
+            item=item,
+            user=self.user,
+            status=Status.IN_PROGRESS.value,
+            progress=120,
+            read_time_minutes=95,
+            start_date=datetime(2026, 3, 1, 12, 0, tzinfo=UTC),
+            end_date=datetime(2026, 3, 12, 12, 0, tzinfo=UTC),
+        )
+
+        response = self.client.get(
+            reverse(
+                "media_details",
+                kwargs={
+                    "source": Sources.OPENLIBRARY.value,
+                    "media_type": MediaTypes.BOOK.value,
+                    "media_id": "OL200M",
+                    "title": "tracked-book",
+                },
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Read Time: 1h 35min")
 
     @patch("app.providers.services.get_media_metadata")
     def test_game_media_details_renders_activity_subtitle_without_stats_cards(
@@ -9943,6 +9989,7 @@ class MediaDetailsViewTests(TestCase):
             item=item,
             status=Status.COMPLETED.value,
             progress=900,
+            read_time_minutes=900,
             start_date=played_at,
             end_date=played_at,
         )

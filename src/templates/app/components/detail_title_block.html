@@ -203,6 +203,13 @@
     </div>
   {% endwith %}
   {% include "app/components/detail_activity_subtitle_slot.html" with media=media media_type=media_type activity_subtitle=activity_subtitle podcast_show=podcast_show user=user only %}
+  {% if not public_view|default:False and current_instance and current_instance.formatted_read_time %}
+    {% if media_type == MediaTypes.BOOK.value or media_type == MediaTypes.COMIC.value or media_type == MediaTypes.MANGA.value %}
+      <p class="text-[var(--color-text-muted)] mb-4 text-center md:text-start">
+        {% blocktranslate trimmed with value_1=current_instance.formatted_read_time %}Read Time: {{ value_1 }}{% endblocktranslate %}
+      </p>
+    {% endif %}
+  {% endif %}
   {% if media.media_type == MediaTypes.BOOK.value and media.series_name %}
     <p class="text-[var(--color-link)] font-medium mb-4 text-center md:text-start">
       {{ media.series_name }}

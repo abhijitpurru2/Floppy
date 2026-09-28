@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from app import config
+from app import config, helpers
 from app.models import (
     TV,
     AlbumTracker,
@@ -158,7 +158,7 @@ class CustomDurationField(forms.CharField):
             return self._parse_hours_minutes(cleaned_value)
         except ValueError as e:
             msg = _(
-                "Invalid time played format. Please use hh:mm, [n]h [n]min, "
+                "Invalid time format. Please use hh:mm, [n]h [n]min, "
                 "[n]h[n]min, [n] minutes, or [n.n] hours."
             )
             raise forms.ValidationError(msg) from e
@@ -422,20 +422,52 @@ class MediaForm(RatingScaleFormMixin, forms.ModelForm):
         return (self.cleaned_data.get("image_url") or "").strip()
 
 
-class MangaForm(MediaForm):
+class ReadingMediaForm(MediaForm):
+    """Shared form behaviour for reading media with an optional read-time metric."""
+
+    read_time_minutes = CustomDurationField(
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": _("hh:mm or 111 minutes")}),
+        label=_("Read Time"),
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Format an existing read-time value for the form field."""
+        kwargs.pop("max_progress", None)
+        super().__init__(*args, **kwargs)
+        if (
+            not self.is_bound
+            and self.instance
+            and getattr(self.instance, "read_time_minutes", 0) > 0
+        ):
+            self.initial["read_time_minutes"] = helpers.minutes_to_hhmm(
+                self.instance.read_time_minutes
+            )
+
+
+class MangaForm(ReadingMediaForm):
     """Form for manga."""
 
     class Meta(MediaForm.Meta):
         """Bind form to model."""
 
         model = Manga
+        fields = [
+            "score",
+            "progress",
+            "read_time_minutes",
+            "status",
+            "start_date",
+            "end_date",
+            "notes",
+            "entry_source",
+        ]
         labels = {
             "progress": _("Progress (Chapters)"),
         }
 
     def __init__(self, *args, **kwargs):
         """Initialize the form."""
-        kwargs.pop("max_progress", None)
         super().__init__(*args, **kwargs)
 
         # Adjust progress field for percentage mode
@@ -520,20 +552,29 @@ class BoardgameForm(MediaForm):
         }
 
 
-class BookForm(MediaForm):
+class BookForm(ReadingMediaForm):
     """Form for books."""
 
     class Meta(MediaForm.Meta):
         """Bind form to model."""
 
         model = Book
+        fields = [
+            "score",
+            "progress",
+            "read_time_minutes",
+            "status",
+            "start_date",
+            "end_date",
+            "notes",
+            "entry_source",
+        ]
         labels = {
             "progress": _("Progress (Pages)"),
         }
 
     def __init__(self, *args, **kwargs):
         """Initialize the form."""
-        kwargs.pop("max_progress", None)
         super().__init__(*args, **kwargs)
 
         # Adjust progress field for percentage mode
@@ -544,20 +585,29 @@ class BookForm(MediaForm):
             )
 
 
-class ComicForm(MediaForm):
+class ComicForm(ReadingMediaForm):
     """Form for comics."""
 
     class Meta(MediaForm.Meta):
         """Bind form to model."""
 
         model = Comic
+        fields = [
+            "score",
+            "progress",
+            "read_time_minutes",
+            "status",
+            "start_date",
+            "end_date",
+            "notes",
+            "entry_source",
+        ]
         labels = {
             "progress": _("Progress (Issues)"),
         }
 
     def __init__(self, *args, **kwargs):
         """Initialize the form."""
-        kwargs.pop("max_progress", None)
         super().__init__(*args, **kwargs)
 
         # Adjust progress field for percentage mode

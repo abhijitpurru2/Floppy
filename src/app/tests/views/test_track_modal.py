@@ -17,6 +17,7 @@ from app.models import (
     Anime,
     Artist,
     ArtistTracker,
+    Book,
     CollectionEntry,
     DiscoverFeedback,
     DiscoverFeedbackType,
@@ -231,6 +232,42 @@ class TrackModalViewTests(TestCase):
         self.assertContains(response, "showMonthsView", html=False)
         self.assertContains(response, "showYearsView", html=False)
         self.assertNotContains(response, "Custom Metadata")
+
+    def test_track_modal_shows_read_time_field_for_books(self):
+        """Reading editors expose the manual read-time field."""
+        item = Item.objects.create(
+            media_id="OL1M",
+            source=Sources.OPENLIBRARY.value,
+            media_type=MediaTypes.BOOK.value,
+            title="Read Time Book",
+            image="http://example.com/book.jpg",
+            number_of_pages=320,
+        )
+        book = Book.objects.create(
+            item=item,
+            user=self.user,
+            status=Status.IN_PROGRESS.value,
+            progress=120,
+            read_time_minutes=95,
+        )
+
+        response = self.client.get(
+            reverse(
+                "track_modal",
+                kwargs={
+                    "source": Sources.OPENLIBRARY.value,
+                    "media_type": MediaTypes.BOOK.value,
+                    "media_id": item.media_id,
+                },
+            ),
+            {"instance_id": book.id},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Read Time")
+        self.assertContains(response, 'name="read_time_minutes"', html=False)
+        self.assertContains(response, 'value="1h 35min"', html=False)
 
     def test_session_history_row_opens_standard_modal_for_instance(self):
         """Session rows preserve the tracked instance when opening the editor."""

@@ -596,6 +596,13 @@ class ProgressEditBook(TestCase):
         self.assertEqual(updated_book.progress, 48)
         self.assertIn("24%", response.content.decode())
 
+    def test_formatted_read_time_renders_human_readable_duration(self):
+        """Books expose the optional read-time metric as formatted text."""
+        self.book.read_time_minutes = 95
+        self.book.save(update_fields=["read_time_minutes"])
+
+        self.assertEqual(Book.objects.get(id=self.book.id).formatted_read_time, "1h 35min")
+
 
 class ProgressEditAudiobook(TestCase):
     """Audiobooks track minutes, so their total comes from runtime, not pages."""
