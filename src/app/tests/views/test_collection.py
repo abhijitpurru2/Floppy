@@ -88,6 +88,10 @@ class CollectionListViewTest(TestCase):
             response.context["collection_entries"][0].item.media_type,
             MediaTypes.MOVIE.value,
         )
+        self.assertContains(
+            response,
+            f'{reverse("collection_stats")}?type={MediaTypes.MOVIE.value}',
+        )
 
     def test_collection_list_empty(self):
         """Test empty collection display."""
@@ -931,6 +935,10 @@ class CollectionStatisticsViewTest(TestCase):
         self.assertEqual(response.context["selected_media_type"], MediaTypes.GAME.value)
         self.assertEqual(response.context["entry_count"], 1)
         self.assertEqual(response.context["total_spent"], Decimal("59.99"))
+        self.assertContains(
+            response,
+            f'{reverse("collection_list")}?type={MediaTypes.GAME.value}',
+        )
 
     def test_collection_stats_ignores_invalid_media_type_filter(self):
         """An invalid stats filter falls back to the unfiltered collection."""

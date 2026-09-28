@@ -9,7 +9,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import EmptyPage, Paginator
-from django.db.models import Q
+from django.db.models import Count, DecimalField, Q, Sum, Value
+from django.db.models.functions import Coalesce, ExtractYear
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -1198,6 +1199,52 @@ def _collection_stat_rows(entries, value_getter):
     return rows
 
 
+def _queryset_stat_rows(queryset, *, field_name=None, annotation=None):
+    """Aggregate count and spend by one queryset field or expression."""
+    if annotation is None and field_name is None:
+        msg = "field_name or annotation is required"
+        raise ValueError(msg)
+    aggregate_total = Coalesce(
+        Sum("purchase_price"),
+        Value(Decimal("0.00")),
+        output_field=DecimalField(max_digits=12, decimal_places=2),
+    )
+    if annotation is None:
+        rows = queryset.values(field_name).annotate(
+            count=Count("id"),
+            spent=aggregate_total,
+        )
+        raw_rows = [
+            {"label": row[field_name], "count": row["count"], "spent": row["spent"]}
+            for row in rows
+        ]
+    else:
+        rows = queryset.annotate(group_value=annotation).values("group_value").annotate(
+            count=Count("id"),
+            spent=aggregate_total,
+        )
+        raw_rows = [
+            {
+                "label": row["group_value"],
+                "count": row["count"],
+                "spent": row["spent"],
+            }
+            for row in rows
+        ]
+    normalized_rows = [
+        {
+            "label": _bucket_label(row["label"]),
+            "count": row["count"],
+            "spent": _quantize_currency(row["spent"]),
+        }
+        for row in raw_rows
+    ]
+    normalized_rows.sort(
+        key=lambda row: (-row["spent"], -row["count"], row["label"].lower()),
+    )
+    return normalized_rows
+
+
 def build_collection_statistics_context(request):
     """Build the collection statistics page context."""
     media_type = request.GET.get("type", "").strip()
@@ -1206,10 +1253,18 @@ def build_collection_statistics_context(request):
     ):
         media_type = ""
     entries_qs = helpers.get_user_collection(request.user, media_type or None)
-    entries = list(entries_qs)
-    total_spent = _quantize_currency(
-        sum((entry.purchase_price or Decimal(0)) for entry in entries),
+    aggregate_summary = entries_qs.aggregate(
+        entry_count=Count("id"),
+        total_spent=Coalesce(
+            Sum("purchase_price"),
+            Value(Decimal("0.00")),
+            output_field=DecimalField(max_digits=12, decimal_places=2),
+        ),
     )
+    entries = list(
+        entries_qs.select_related(None).only("id", "purchase_price", "custom_field_values"),
+    )
+    total_spent = _quantize_currency(aggregate_summary["total_spent"])
 
     custom_fields = [
         field
@@ -1244,18 +1299,18 @@ def build_collection_statistics_context(request):
     return {
         "selected_media_type": media_type,
         "media_types": available_media_types,
-        "entry_count": len(entries),
+        "entry_count": aggregate_summary["entry_count"],
         "total_spent": total_spent,
-        "by_media_type": _collection_stat_rows(entries, lambda entry: entry.item.media_type),
-        "by_format": _collection_stat_rows(entries, lambda entry: entry.media_type),
-        "by_resolution": _collection_stat_rows(entries, lambda entry: entry.resolution),
-        "by_purchase_location": _collection_stat_rows(
-            entries,
-            lambda entry: entry.purchase_location,
+        "by_media_type": _queryset_stat_rows(entries_qs, field_name="item__media_type"),
+        "by_format": _queryset_stat_rows(entries_qs, field_name="media_type"),
+        "by_resolution": _queryset_stat_rows(entries_qs, field_name="resolution"),
+        "by_purchase_location": _queryset_stat_rows(
+            entries_qs,
+            field_name="purchase_location",
         ),
-        "by_year": _collection_stat_rows(
-            entries,
-            lambda entry: entry.collected_at.year if entry.collected_at else "",
+        "by_year": _queryset_stat_rows(
+            entries_qs,
+            annotation=ExtractYear("collected_at"),
         ),
         "custom_field_rows": custom_field_rows,
     }
