@@ -288,8 +288,12 @@ def build_history_day(user, day_key, logging_style_override=None, media_types=No
                 "episode_label": None,
                 "episode_code": None,
                 "played_at_local": played_at_local,
-                "runtime_minutes": 0,
-                "runtime_display": None,
+                "runtime_minutes": getattr(record, "read_time_minutes", 0) or 0,
+                "runtime_display": helpers.minutes_to_hhmm(
+                    getattr(record, "read_time_minutes", 0) or 0
+                )
+                if getattr(record, "read_time_minutes", 0)
+                else None,
                 "instance_id": record.id,
                 "entry_key": f"{media_type_value}-{record.id}",
             }

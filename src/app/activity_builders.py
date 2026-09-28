@@ -88,6 +88,10 @@ def _build_detail_activity_subtitle(
             getattr(current_instance, "formatted_progress", None),
             include_max=True,
         )
+        duration_text = _format_detail_activity_duration(
+            getattr(current_instance, "read_time_minutes", 0),
+            "read",
+        )
     elif media_type == MediaTypes.GAME.value:
         progress_value = (
             getattr(current_instance, "formatted_aggregated_progress", None)

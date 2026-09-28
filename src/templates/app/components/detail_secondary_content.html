@@ -94,6 +94,10 @@
                       <div class="text-xs text-[var(--color-text-muted)]">{% blocktranslate trimmed with value_1=user_media.end_date|datetime_format:user %}Finished: {{ value_1 }}{% endblocktranslate %}</div>
                     {% endif %}
 
+                    {% if user_media.formatted_read_time %}
+                      <div class="text-xs text-[var(--color-text-muted)]">{% blocktranslate trimmed with value_1=user_media.formatted_read_time %}Read Time: {{ value_1 }}{% endblocktranslate %}</div>
+                    {% endif %}
+
                     {% if user_media.notes %}
                       {% with user_notes_id=user_media.id|stringformat:"s"|add:"-notes-preview" %}
                         {{ user_media.notes|json_script:user_notes_id }}

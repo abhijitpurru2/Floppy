@@ -158,7 +158,7 @@ class CustomDurationField(forms.CharField):
             return self._parse_hours_minutes(cleaned_value)
         except ValueError as e:
             msg = _(
-                "Invalid time played format. Please use hh:mm, [n]h [n]min, "
+                "Invalid time format. Please use hh:mm, [n]h [n]min, "
                 "[n]h[n]min, [n] minutes, or [n.n] hours."
             )
             raise forms.ValidationError(msg) from e
@@ -425,10 +425,26 @@ class MediaForm(RatingScaleFormMixin, forms.ModelForm):
 class MangaForm(MediaForm):
     """Form for manga."""
 
+    read_time_minutes = CustomDurationField(
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": _("hh:mm or 111 minutes")}),
+        label=_("Read Time"),
+    )
+
     class Meta(MediaForm.Meta):
         """Bind form to model."""
 
         model = Manga
+        fields = [
+            "score",
+            "progress",
+            "read_time_minutes",
+            "status",
+            "start_date",
+            "end_date",
+            "notes",
+            "entry_source",
+        ]
         labels = {
             "progress": _("Progress (Chapters)"),
         }
@@ -443,6 +459,14 @@ class MangaForm(MediaForm):
             self.fields["progress"].label = _("Progress (%)")
             self.fields["progress"].widget.attrs.update(
                 {"min": 0, "max": 100, "step": 0.1, "placeholder": "%"}
+            )
+        if (
+            not self.is_bound
+            and self.instance
+            and getattr(self.instance, "read_time_minutes", 0) > 0
+        ):
+            self.initial["read_time_minutes"] = app.helpers.minutes_to_hhmm(
+                self.instance.read_time_minutes
             )
 
 
@@ -523,10 +547,26 @@ class BoardgameForm(MediaForm):
 class BookForm(MediaForm):
     """Form for books."""
 
+    read_time_minutes = CustomDurationField(
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": _("hh:mm or 111 minutes")}),
+        label=_("Read Time"),
+    )
+
     class Meta(MediaForm.Meta):
         """Bind form to model."""
 
         model = Book
+        fields = [
+            "score",
+            "progress",
+            "read_time_minutes",
+            "status",
+            "start_date",
+            "end_date",
+            "notes",
+            "entry_source",
+        ]
         labels = {
             "progress": _("Progress (Pages)"),
         }
@@ -542,15 +582,39 @@ class BookForm(MediaForm):
             self.fields["progress"].widget.attrs.update(
                 {"min": 0, "max": 100, "step": 0.1, "placeholder": "%"}
             )
+        if (
+            not self.is_bound
+            and self.instance
+            and getattr(self.instance, "read_time_minutes", 0) > 0
+        ):
+            self.initial["read_time_minutes"] = app.helpers.minutes_to_hhmm(
+                self.instance.read_time_minutes
+            )
 
 
 class ComicForm(MediaForm):
     """Form for comics."""
 
+    read_time_minutes = CustomDurationField(
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": _("hh:mm or 111 minutes")}),
+        label=_("Read Time"),
+    )
+
     class Meta(MediaForm.Meta):
         """Bind form to model."""
 
         model = Comic
+        fields = [
+            "score",
+            "progress",
+            "read_time_minutes",
+            "status",
+            "start_date",
+            "end_date",
+            "notes",
+            "entry_source",
+        ]
         labels = {
             "progress": _("Progress (Issues)"),
         }
@@ -565,6 +629,14 @@ class ComicForm(MediaForm):
             self.fields["progress"].label = _("Progress (%)")
             self.fields["progress"].widget.attrs.update(
                 {"min": 0, "max": 100, "step": 0.1, "placeholder": "%"}
+            )
+        if (
+            not self.is_bound
+            and self.instance
+            and getattr(self.instance, "read_time_minutes", 0) > 0
+        ):
+            self.initial["read_time_minutes"] = app.helpers.minutes_to_hhmm(
+                self.instance.read_time_minutes
             )
 
 

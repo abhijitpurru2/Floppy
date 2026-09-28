@@ -4046,6 +4046,7 @@ class MediaDetailsViewTests(TestCase):
                     user=self.user,
                     status=Status.IN_PROGRESS.value,
                     progress=120,
+                    read_time_minutes=95,
                     start_date=datetime(2026, 3, 1, 12, 0, tzinfo=UTC),
                     end_date=datetime(2026, 3, 12, 12, 0, tzinfo=UTC),
                 )
@@ -4066,6 +4067,7 @@ class MediaDetailsViewTests(TestCase):
                     response,
                     "Progress: 120/320",
                     "2026-03-01 - 2026-03-12",
+                    "1h 35min read",
                 )
 
     @patch("app.providers.services.get_media_metadata")

@@ -410,6 +410,7 @@ def _build_prefetch_for_range(user, day_list):
                 "status",
                 "score",
                 "progress",
+                "read_time_minutes",
                 "item__genres",
             )
             .iterator(chunk_size=2000),
@@ -1553,6 +1554,7 @@ def build_stats_for_day(
                     "status",
                     "score",
                     "progress",
+                    "read_time_minutes",
                     "item__genres",
                 )
                 .iterator(chunk_size=500)
@@ -1575,7 +1577,7 @@ def build_stats_for_day(
                 minutes_by_type[media_type] += 60
                 _add_hour(media_type, play_dt)
 
-            total_minutes = row.get("progress") or 0
+            total_minutes = row.get("read_time_minutes") or row.get("progress") or 0
             if total_minutes <= 0:
                 continue
             genres = stats._coerce_genre_list(row.get("item__genres"))
