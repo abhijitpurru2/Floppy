@@ -850,6 +850,32 @@ class CollectionEntryDetailViewTest(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+    def test_collection_entry_detail_update_redirects_back_to_detail(self):
+        """Updating from the detail page persists values and returns to next."""
+        self.client.login(**self.credentials)
+        detail_url = reverse(
+            "collection_entry_detail",
+            kwargs={"entry_id": self.entry.id},
+        )
+
+        response = self.client.post(
+            reverse("collection_update", kwargs={"entry_id": self.entry.id}),
+            {
+                "item": self.item.id,
+                "media_type": "digital",
+                "resolution": "1080p",
+                "purchase_location": "Steam",
+                "next": detail_url,
+            },
+        )
+
+        self.entry.refresh_from_db()
+        self.assertEqual(self.entry.media_type, "digital")
+        self.assertEqual(self.entry.resolution, "1080p")
+        self.assertEqual(self.entry.purchase_location, "Steam")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, detail_url)
+
 
 class CollectionStatisticsViewTest(TestCase):
     """Test collection statistics page."""
