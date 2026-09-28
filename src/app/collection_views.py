@@ -1261,14 +1261,6 @@ def build_collection_statistics_context(request):
             output_field=DecimalField(max_digits=12, decimal_places=2),
         ),
     )
-    entries = list(
-        entries_qs.select_related(None).values_list(
-            "purchase_price",
-            "custom_field_values",
-        ),
-    )
-    total_spent = _quantize_currency(aggregate_summary["total_spent"])
-
     custom_fields = [
         field
         for field in CollectionField.objects.filter(group__user=request.user)
@@ -1276,6 +1268,16 @@ def build_collection_statistics_context(request):
         .order_by("group__position", "position", "id")
         if not media_type or media_type in field.media_types
     ]
+    if custom_fields:
+        entries = list(
+            entries_qs.select_related(None).values_list(
+                "purchase_price",
+                "custom_field_values",
+            ),
+        )
+    else:
+        entries = []
+    total_spent = _quantize_currency(aggregate_summary["total_spent"])
     custom_field_defs = {str(field.id): field for field in custom_fields}
     custom_field_buckets = {field_id: {} for field_id in custom_field_defs}
     for purchase_price, custom_field_values in entries:

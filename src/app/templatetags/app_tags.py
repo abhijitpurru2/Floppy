@@ -262,6 +262,14 @@ def collection_quality_display(collection_entry, explicit_label=""):
 
 
 @register.filter
+def collection_price(value):
+    """Format collection purchase prices consistently."""
+    if value in (None, ""):
+        return ""
+    return f"${value:.2f}"
+
+
+@register.filter
 def music_artist_join_phrase(value):
     """Normalize album artist join phrases for display."""
     phrase = str(value or "")

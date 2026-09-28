@@ -37,7 +37,7 @@
       </div>
       <div class="rounded-lg bg-[var(--color-surface)] p-5">
         <p class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">{% translate "Total Spent" %}</p>
-        <p class="mt-2 text-3xl font-bold text-[var(--color-text)]">${{ total_spent|floatformat:2 }}</p>
+        <p class="mt-2 text-3xl font-bold text-[var(--color-text)]">{{ total_spent|collection_price }}</p>
       </div>
     </div>
 

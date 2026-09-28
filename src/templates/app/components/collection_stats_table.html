@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load app_tags %}
 
 {% if rows %}
   <div class="mt-4 overflow-hidden rounded-md border border-[var(--color-border)]">
@@ -15,7 +16,7 @@
           <tr class="border-t border-[var(--color-border)] first:border-t-0">
             <td class="px-4 py-3 text-[var(--color-text)]">{{ row.label }}</td>
             <td class="px-4 py-3 text-[var(--color-text-secondary)]">{{ row.count }}</td>
-            <td class="px-4 py-3 text-[var(--color-text-secondary)]">${{ row.spent|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-[var(--color-text-secondary)]">{{ row.spent|collection_price }}</td>
           </tr>
         {% endfor %}
       </tbody>
