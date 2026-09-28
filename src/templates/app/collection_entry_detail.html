@@ -47,6 +47,7 @@
         <form id="{{ collection_form_id }}" method="post" action="{{ collection_form_action }}?next={{ return_url|urlencode }}">
           {% csrf_token %}
           <input type="hidden" name="item_id" value="{{ item.id }}">
+          <input type="hidden" name="next" value="{{ return_url }}">
           {{ form.item }}
 
           <h2 class="mb-4 text-xl font-semibold text-[var(--color-text)]">{{ collection_form_heading }}</h2>

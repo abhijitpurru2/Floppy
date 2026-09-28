@@ -1262,7 +1262,10 @@ def build_collection_statistics_context(request):
         ),
     )
     entries = list(
-        entries_qs.select_related(None).only("id", "purchase_price", "custom_field_values"),
+        entries_qs.select_related(None).values_list(
+            "purchase_price",
+            "custom_field_values",
+        ),
     )
     total_spent = _quantize_currency(aggregate_summary["total_spent"])
 
@@ -1275,8 +1278,8 @@ def build_collection_statistics_context(request):
     ]
     custom_field_defs = {str(field.id): field for field in custom_fields}
     custom_field_buckets = {field_id: {} for field_id in custom_field_defs}
-    for entry in entries:
-        for field_id, value in (entry.custom_field_values or {}).items():
+    for purchase_price, custom_field_values in entries:
+        for field_id, value in (custom_field_values or {}).items():
             if field_id not in custom_field_defs:
                 continue
             label = _bucket_label(value)
@@ -1285,7 +1288,7 @@ def build_collection_statistics_context(request):
                 {"label": label, "count": 0, "spent": Decimal("0.00")},
             )
             bucket["count"] += 1
-            bucket["spent"] += entry.purchase_price or Decimal("0.00")
+            bucket["spent"] += purchase_price or Decimal("0.00")
     custom_field_rows = []
     for field in custom_fields:
         rows = list(custom_field_buckets[str(field.id)].values())
