@@ -1273,12 +1273,25 @@ def build_collection_statistics_context(request):
         .order_by("group__position", "position", "id")
         if not media_type or media_type in field.media_types
     ]
+    custom_field_defs = {str(field.id): field for field in custom_fields}
+    custom_field_buckets = {field_id: {} for field_id in custom_field_defs}
+    for entry in entries:
+        for field_id, value in entry.custom_field_values.items():
+            if field_id not in custom_field_defs:
+                continue
+            label = _bucket_label(value)
+            bucket = custom_field_buckets[field_id].setdefault(
+                label,
+                {"label": label, "count": 0, "spent": Decimal("0.00")},
+            )
+            bucket["count"] += 1
+            bucket["spent"] += entry.purchase_price or Decimal("0.00")
     custom_field_rows = []
     for field in custom_fields:
-        rows = _collection_stat_rows(
-            entries,
-            lambda entry, field_id=str(field.id): entry.custom_field_values.get(field_id),
-        )
+        rows = list(custom_field_buckets[str(field.id)].values())
+        rows.sort(key=lambda row: (-row["spent"], -row["count"], row["label"].lower()))
+        for row in rows:
+            row["spent"] = _quantize_currency(row["spent"])
         if rows:
             custom_field_rows.append(
                 {
