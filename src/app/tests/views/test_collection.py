@@ -835,7 +835,7 @@ class CollectionEntryDetailViewTest(TestCase):
         """Users cannot open another user's collection entry page."""
         other_user = get_user_model().objects.create_user(
             username="other",
-            ******,
+            password="otherpass",
         )
         other_entry = CollectionEntry.objects.create(user=other_user, item=self.item)
         self.client.login(**self.credentials)

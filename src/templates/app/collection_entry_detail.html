@@ -39,7 +39,7 @@
                class="aspect-[2/3] w-full bg-[var(--color-surface-alt)] object-cover">
         </div>
         <div class="rounded-lg bg-[var(--color-surface)] p-4">
-          {% include "app/components/collection_entry_summary.html" with collection_entry=collection_entry media_type=item.media_type user=request.user entry_title=item|display_title:user %}
+          {% include "app/components/collection_entry_summary.html" with collection_entry=collection_entry media_type=item.media_type user=request.user entry_title=item|display_title:user entry_quality_label="" %}
         </div>
       </div>
 

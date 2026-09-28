@@ -1171,7 +1171,7 @@ def build_collection_entry_context(request, entry, *, return_url=""):
 
 def _quantize_currency(value):
     """Return a two-decimal Decimal for collection totals."""
-    return (value or Decimal("0")).quantize(Decimal("0.01"))
+    return (value or Decimal(0)).quantize(Decimal("0.01"))
 
 
 def _bucket_label(value):
@@ -1187,10 +1187,10 @@ def _collection_stat_rows(entries, value_getter):
         label = _bucket_label(value_getter(entry))
         bucket = buckets.setdefault(
             label,
-            {"label": label, "count": 0, "spent": Decimal("0")},
+            {"label": label, "count": 0, "spent": Decimal(0)},
         )
         bucket["count"] += 1
-        bucket["spent"] += entry.purchase_price or Decimal("0")
+        bucket["spent"] += entry.purchase_price or Decimal(0)
     rows = list(buckets.values())
     rows.sort(key=lambda row: (-row["spent"], -row["count"], row["label"].lower()))
     for row in rows:
@@ -1206,7 +1206,7 @@ def build_collection_statistics_context(request):
     entries_qs = helpers.get_user_collection(request.user, media_type or None)
     entries = list(entries_qs)
     total_spent = _quantize_currency(
-        sum((entry.purchase_price or Decimal("0")) for entry in entries),
+        sum((entry.purchase_price or Decimal(0)) for entry in entries),
     )
 
     custom_fields = [

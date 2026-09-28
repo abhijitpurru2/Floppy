@@ -94,8 +94,8 @@ from app.collection_views import (
     collection_quick_add,
     collection_remove,
     collection_remove_season,
-    collection_status_api,
     collection_statistics,
+    collection_status_api,
     collection_update,
 )
 from app.columns import (
@@ -404,6 +404,8 @@ from users.models import (
     MediaStatusChoices,
     TopTalentSortChoices,
 )
+
+_COLLECTION_VIEW_EXPORTS = (collection_entry_detail, collection_statistics)
 
 logger = logging.getLogger(__name__)
 
