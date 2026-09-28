@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import Client, TestCase
@@ -7,6 +9,8 @@ from django.urls import reverse
 from app.models import (
     TV,
     CollectionEntry,
+    CollectionField,
+    CollectionFieldGroup,
     Episode,
     Game,
     Item,
@@ -123,6 +127,18 @@ class CollectionListViewTest(TestCase):
         self.assertIn("Test Movie", content)
         self.assertNotIn("media-card-rating-", content)
         self.assertNotIn('class="media-status-chip ', content)
+
+    def test_collection_card_links_to_collection_entry_detail(self):
+        """Collection cards open the collection entry page instead of the media page."""
+        entry = CollectionEntry.objects.create(user=self.user, item=self.item)
+        self.client.login(**self.credentials)
+
+        response = self.client.get(reverse("collection_list"))
+
+        self.assertContains(
+            response,
+            reverse("collection_entry_detail", kwargs={"entry_id": entry.id}),
+        )
 
     def test_collection_card_rating_ignores_other_users_tracking(self):
         """Another user's rating of the same item never appears on this user's card."""
@@ -779,6 +795,144 @@ class CollectionRemoveViewTest(TestCase):
         )
 
 
+class CollectionEntryDetailViewTest(TestCase):
+    """Test collection entry detail page."""
+
+    def setUp(self):
+        self.client = Client()
+        self.credentials = {"username": "test", "password": "12345"}
+        self.user = get_user_model().objects.create_user(**self.credentials)
+        self.item = Item.objects.create(
+            media_id="detail-1234",
+            source=Sources.TMDB.value,
+            media_type=MediaTypes.MOVIE.value,
+            title="Detail Movie",
+            image="http://example.com/detail.jpg",
+        )
+        self.entry = CollectionEntry.objects.create(
+            user=self.user,
+            item=self.item,
+            media_type="bluray",
+            resolution="4k",
+            purchase_price=Decimal("19.99"),
+            purchase_location="Best Buy",
+        )
+
+    def test_collection_entry_detail_authenticated(self):
+        """Users can open their collection entry detail page."""
+        self.client.login(**self.credentials)
+
+        response = self.client.get(
+            reverse("collection_entry_detail", kwargs={"entry_id": self.entry.id}),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["collection_entry"], self.entry)
+        self.assertContains(response, "Edit Collection Entry")
+        self.assertContains(response, "Best Buy")
+
+    def test_collection_entry_detail_requires_ownership(self):
+        """Users cannot open another user's collection entry page."""
+        other_user = get_user_model().objects.create_user(
+            username="other",
+            ******,
+        )
+        other_entry = CollectionEntry.objects.create(user=other_user, item=self.item)
+        self.client.login(**self.credentials)
+
+        response = self.client.get(
+            reverse("collection_entry_detail", kwargs={"entry_id": other_entry.id}),
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+
+class CollectionStatisticsViewTest(TestCase):
+    """Test collection statistics page."""
+
+    def setUp(self):
+        self.client = Client()
+        self.credentials = {"username": "test", "password": "12345"}
+        self.user = get_user_model().objects.create_user(**self.credentials)
+        self.movie = Item.objects.create(
+            media_id="stats-movie",
+            source=Sources.TMDB.value,
+            media_type=MediaTypes.MOVIE.value,
+            title="Stats Movie",
+        )
+        self.game = Item.objects.create(
+            media_id="stats-game",
+            source=Sources.IGDB.value,
+            media_type=MediaTypes.GAME.value,
+            title="Stats Game",
+        )
+
+    def test_collection_stats_groups_count_and_spend(self):
+        """Collection stats show grouped counts and spend totals."""
+        group = CollectionFieldGroup.objects.create(user=self.user, name="Condition")
+        field = CollectionField.objects.create(
+            group=group,
+            label="Grade",
+            media_types=[MediaTypes.MOVIE.value, MediaTypes.GAME.value],
+        )
+        CollectionEntry.objects.create(
+            user=self.user,
+            item=self.movie,
+            media_type="bluray",
+            resolution="4k",
+            purchase_price=Decimal("19.99"),
+            purchase_location="Best Buy",
+            custom_field_values={str(field.id): "Mint"},
+        )
+        CollectionEntry.objects.create(
+            user=self.user,
+            item=self.game,
+            media_type="digital",
+            resolution="Steam",
+            purchase_price=Decimal("59.99"),
+            purchase_location="Steam",
+            custom_field_values={str(field.id): "Mint"},
+        )
+        self.client.login(**self.credentials)
+
+        response = self.client.get(reverse("collection_stats"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["entry_count"], 2)
+        self.assertEqual(response.context["total_spent"], Decimal("79.98"))
+        self.assertContains(response, "By Media Type")
+        self.assertContains(response, "By Purchase Location")
+        self.assertContains(response, "Best Buy")
+        self.assertContains(response, "Steam")
+        self.assertContains(response, "Mint")
+
+    def test_collection_stats_filter_by_media_type(self):
+        """Collection stats can be scoped to one media type."""
+        CollectionEntry.objects.create(
+            user=self.user,
+            item=self.movie,
+            media_type="bluray",
+            purchase_price=Decimal("19.99"),
+        )
+        CollectionEntry.objects.create(
+            user=self.user,
+            item=self.game,
+            media_type="digital",
+            purchase_price=Decimal("59.99"),
+        )
+        self.client.login(**self.credentials)
+
+        response = self.client.get(
+            reverse("collection_stats"),
+            {"type": MediaTypes.GAME.value},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_media_type"], MediaTypes.GAME.value)
+        self.assertEqual(response.context["entry_count"], 1)
+        self.assertEqual(response.context["total_spent"], Decimal("59.99"))
+
+
 class CollectionModalViewTest(TestCase):
     """Test collection modal view."""
 
@@ -876,6 +1030,14 @@ class CollectionModalViewTest(TestCase):
         self.assertEqual(response.context["entry"], second_entry)
         self.assertContains(response, "Super Nintendo Entertainment System")
         self.assertContains(response, "Sega Mega Drive/Genesis")
+        self.assertContains(
+            response,
+            reverse("collection_entry_detail", kwargs={"entry_id": first_entry.id}),
+        )
+        self.assertContains(
+            response,
+            reverse("collection_entry_detail", kwargs={"entry_id": second_entry.id}),
+        )
         self.assertTrue(CollectionEntry.objects.filter(id=first_entry.id).exists())
 
     def test_collection_modal_show_displays_season_audit_entries_with_sources(self):

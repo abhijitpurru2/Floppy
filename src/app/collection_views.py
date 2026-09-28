@@ -2,6 +2,7 @@ import json
 import logging
 import math
 from collections import Counter, defaultdict
+from decimal import Decimal
 
 from django.apps import apps
 from django.conf import settings
@@ -103,6 +104,7 @@ def _shows_for_keys(show_keys):
     ]
 
 
+@login_required
 @require_GET
 def collection_list(request, media_type=None):
     """Display user's collection, filterable by type, format, and rating."""
@@ -298,6 +300,34 @@ def collection_list(request, media_type=None):
         return render(request, "app/components/collection_items.html", context)
 
     return render(request, "app/collection_list.html", context)
+
+
+@login_required
+@require_GET
+def collection_statistics(request):
+    """Display aggregate collection statistics for the current user."""
+    return render(
+        request,
+        "app/collection_stats.html",
+        build_collection_statistics_context(request),
+    )
+
+
+@login_required
+@require_GET
+def collection_entry_detail(request, entry_id):
+    """Display and edit a single collection entry."""
+    entry = get_object_or_404(
+        CollectionEntry.objects.select_related("item"),
+        id=entry_id,
+        user=request.user,
+    )
+    context = build_collection_entry_context(
+        request,
+        entry,
+        return_url=request.GET.get("next") or reverse("collection_list"),
+    )
+    return render(request, "app/collection_entry_detail.html", context)
 
 
 def _collection_redirect(request):
@@ -1064,9 +1094,12 @@ def _resolve_collection_item(
     return item, metadata
 
 
-def _custom_fields_fragment_context(request, item, *, manage_fields_open=False):
+def _custom_fields_fragment_context(
+    request, item, *, manage_fields_open=False, existing_entry=None
+):
     """Build context for the custom-fields fragment, scoped to one item."""
-    existing_entry = helpers.get_item_collection_entries(request.user, item).first()
+    if existing_entry is None:
+        existing_entry = helpers.get_item_collection_entries(request.user, item).first()
     return {
         "item": item,
         "custom_field_groups": _visible_custom_field_groups(
@@ -1089,6 +1122,140 @@ def _custom_fields_fragment_context(request, item, *, manage_fields_open=False):
             [{"value": value, "label": label} for value, label in MediaTypes.choices]
         ),
         "collection_fields_save_url": reverse("collection_fields_save"),
+    }
+
+
+def _collection_form_kwargs(item, *, user, entry=None, metadata=None):
+    """Return kwargs for CollectionEntryForm for this item/entry."""
+    platform_choices = None
+    if item.media_type == MediaTypes.GAME.value:
+        platforms = (metadata or {}).get("details", {}).get("platforms") or []
+        if platforms:
+            platform_choices = platforms
+    kwargs = {
+        "user": user,
+        "collection_media_type": item.media_type,
+    }
+    if entry is not None:
+        kwargs["instance"] = entry
+    if platform_choices:
+        kwargs["collection_choices_override"] = {"resolution": platform_choices}
+    return kwargs
+
+
+def build_collection_entry_context(request, entry, *, return_url=""):
+    """Build context for editing one existing collection entry."""
+    item = entry.item
+    form = CollectionEntryForm(**_collection_form_kwargs(item, user=request.user, entry=entry))
+    form.fields["item"].initial = item.id
+    return {
+        "item": item,
+        "collection_entry": entry,
+        "form": form,
+        "return_url": return_url or request.get_full_path(),
+        "collection_fields": getattr(form, "collection_fields", []),
+        "collection_form_id": "collection-entry-form",
+        "collection_form_action": reverse(
+            "collection_update",
+            kwargs={"entry_id": entry.id},
+        ),
+        "collection_submit_label": gettext("Update Entry"),
+        "collection_form_heading": gettext("Edit Collection Entry"),
+        **_custom_fields_fragment_context(
+            request,
+            item,
+            existing_entry=entry,
+        ),
+    }
+
+
+def _quantize_currency(value):
+    """Return a two-decimal Decimal for collection totals."""
+    return (value or Decimal("0")).quantize(Decimal("0.01"))
+
+
+def _bucket_label(value):
+    """Normalize an aggregate bucket label for display."""
+    normalized = str(value or "").strip()
+    return normalized or gettext("Unknown")
+
+
+def _collection_stat_rows(entries, value_getter):
+    """Aggregate count and spend by a derived label."""
+    buckets = {}
+    for entry in entries:
+        label = _bucket_label(value_getter(entry))
+        bucket = buckets.setdefault(
+            label,
+            {"label": label, "count": 0, "spent": Decimal("0")},
+        )
+        bucket["count"] += 1
+        bucket["spent"] += entry.purchase_price or Decimal("0")
+    rows = list(buckets.values())
+    rows.sort(key=lambda row: (-row["spent"], -row["count"], row["label"].lower()))
+    for row in rows:
+        row["spent"] = _quantize_currency(row["spent"])
+    return rows
+
+
+def build_collection_statistics_context(request):
+    """Build the collection statistics page context."""
+    media_type = request.GET.get("type", "").strip()
+    if media_type == "all":
+        media_type = ""
+    entries_qs = helpers.get_user_collection(request.user, media_type or None)
+    entries = list(entries_qs)
+    total_spent = _quantize_currency(
+        sum((entry.purchase_price or Decimal("0")) for entry in entries),
+    )
+
+    custom_fields = [
+        field
+        for field in CollectionField.objects.filter(group__user=request.user)
+        .select_related("group")
+        .order_by("group__position", "position", "id")
+        if not media_type or media_type in field.media_types
+    ]
+    custom_field_rows = []
+    for field in custom_fields:
+        rows = _collection_stat_rows(
+            entries,
+            lambda entry, field_id=str(field.id): entry.custom_field_values.get(field_id),
+        )
+        if rows:
+            custom_field_rows.append(
+                {
+                    "group_name": field.group.name,
+                    "field_label": field.label,
+                    "rows": rows,
+                }
+            )
+
+    available_media_types = sorted(
+        set(
+            CollectionEntry.objects.filter(user=request.user)
+            .order_by()
+            .values_list("item__media_type", flat=True)
+            .distinct(),
+        ),
+    )
+    return {
+        "selected_media_type": media_type,
+        "media_types": available_media_types,
+        "entry_count": len(entries),
+        "total_spent": total_spent,
+        "by_media_type": _collection_stat_rows(entries, lambda entry: entry.item.media_type),
+        "by_format": _collection_stat_rows(entries, lambda entry: entry.media_type),
+        "by_resolution": _collection_stat_rows(entries, lambda entry: entry.resolution),
+        "by_purchase_location": _collection_stat_rows(
+            entries,
+            lambda entry: entry.purchase_location,
+        ),
+        "by_year": _collection_stat_rows(
+            entries,
+            lambda entry: entry.collected_at.year if entry.collected_at else "",
+        ),
+        "custom_field_rows": custom_field_rows,
     }
 
 
@@ -1179,12 +1346,6 @@ def build_collection_modal_context(
         metadata,
     )
 
-    platform_choices = None
-    if media_type == MediaTypes.GAME.value:
-        platforms = (metadata or {}).get("details", {}).get("platforms") or []
-        if platforms:
-            platform_choices = platforms
-
     existing_entries = helpers.get_item_collection_entries(request.user, item)
     existing_entry = existing_entries.first()
     season_audit_entries = _build_collection_season_audit_entries(request.user, item)
@@ -1196,11 +1357,7 @@ def build_collection_modal_context(
         # is unambiguous: keep it visible so it can still be seen and removed.
         visible_existing_entries = []
     form = CollectionEntryForm(
-        user=request.user,
-        collection_media_type=item.media_type,
-        collection_choices_override={"resolution": platform_choices}
-        if platform_choices
-        else None,
+        **_collection_form_kwargs(item, user=request.user, metadata=metadata),
     )
     form.fields["item"].initial = item.id
 
@@ -1221,6 +1378,12 @@ def build_collection_modal_context(
         "form": form,
         "return_url": return_url,
         "collection_fields": collection_fields,
+        "collection_form_id": "collection-add-form",
+        "collection_form_action": reverse("collection_add"),
+        "collection_submit_label": gettext("Add Copy"),
+        "collection_form_heading": gettext("Add Another Copy")
+        if visible_existing_entries or season_audit_entries or episode_audit_entries
+        else gettext("Add Copy"),
         **_custom_fields_fragment_context(request, item),
     }
 

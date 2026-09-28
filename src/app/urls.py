@@ -462,7 +462,13 @@ urlpatterns = [
         views.collection_list,
         name="collection_list_filtered",
     ),
+    path("collection/stats/", views.collection_statistics, name="collection_stats"),
     path("collection/add/", views.collection_add, name="collection_add"),
+    path(
+        "collection/<int:entry_id>/",
+        views.collection_entry_detail,
+        name="collection_entry_detail",
+    ),
     path(
         "collection/<int:entry_id>/update/",
         views.collection_update,

@@ -62,6 +62,7 @@ CARD_VALUES = frozenset(
         "item",
         "media",
         "title",
+        "detail_url",
         "card_media_type",
         "current_sort",
         "image_override",

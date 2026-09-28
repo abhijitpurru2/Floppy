@@ -38,7 +38,11 @@
 
       {% if entry_title %}
         <p class="mt-1 text-sm font-semibold leading-tight text-[var(--color-text-secondary)] break-words">
-          {{ entry_title }}
+          {% if entry_url %}
+            <a href="{{ entry_url }}" class="hover:text-[var(--color-link)] transition-colors">{{ entry_title }}</a>
+          {% else %}
+            {{ entry_title }}
+          {% endif %}
         </p>
       {% endif %}
 

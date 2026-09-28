@@ -47,7 +47,7 @@
                         <input type="checkbox"
                                id="custom_field_{{ field.id }}"
                                name="custom_field_{{ field.id }}"
-                               form="collection-add-form"
+                               form="{{ collection_form_id|default:'collection-add-form' }}"
                                {% if current_value %}checked{% endif %}
                                class="h-4 w-4 rounded border-gray-600 bg-[var(--color-surface-strong)] text-indigo-500 focus:ring-[var(--color-accent)]">
                         <span>{% translate "Yes" %}</span>
@@ -84,13 +84,13 @@
                             </button>
                           {% endfor %}
                         </div>
-                        <input type="hidden" name="custom_field_{{ field.id }}" form="collection-add-form" x-model="selectedValue">
+                        <input type="hidden" name="custom_field_{{ field.id }}" form="{{ collection_form_id|default:'collection-add-form' }}" x-model="selectedValue">
                       </div>
                     {% else %}
                       <input type="{% if field.field_type == 'number' %}number{% elif field.field_type == 'date' %}date{% else %}text{% endif %}"
                              id="custom_field_{{ field.id }}"
                              name="custom_field_{{ field.id }}"
-                             form="collection-add-form"
+                             form="{{ collection_form_id|default:'collection-add-form' }}"
                              value="{{ current_value|default_if_none:'' }}"
                              class="w-full p-2 bg-[var(--color-surface-strong)] rounded-md text-[var(--color-text)] border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]">
                     {% endif %}

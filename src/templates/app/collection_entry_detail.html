@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load app_tags %}
+{% load widget_tweaks %}
+{% load user_tags %}
+
+{% block title %}
+  {{ item|display_title:user }} · {% translate "Collection Entry" %} - Floppy
+{% endblock title %}
+
+{% block content %}
+  <div class="mx-auto max-w-5xl space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <a href="{{ return_url }}" class="text-sm text-[var(--color-link)] hover:underline">{% translate "Back to collection" %}</a>
+        <h1 class="mt-1 text-3xl font-bold">{{ item|display_title:user }}</h1>
+        <p class="mt-1 text-sm text-[var(--color-text-muted)]">{% translate "Collection entry details" %}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{{ item|media_url }}"
+           class="inline-flex items-center rounded-md border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-strong)] hover:text-[var(--color-text)] transition-colors">
+          {% translate "View media" %}
+        </a>
+        <form method="post" action="{% url 'collection_remove' collection_entry.id %}?next={{ return_url|urlencode }}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 transition-colors">
+            {% translate "Delete" %}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+      <div class="space-y-4">
+        <div class="overflow-hidden rounded-lg bg-[var(--color-surface)]">
+          <img src="{{ item.image|default:IMG_NONE|image_url }}"
+               alt="{{ item|display_title:user }}"
+               class="aspect-[2/3] w-full bg-[var(--color-surface-alt)] object-cover">
+        </div>
+        <div class="rounded-lg bg-[var(--color-surface)] p-4">
+          {% include "app/components/collection_entry_summary.html" with collection_entry=collection_entry media_type=item.media_type user=request.user entry_title=item|display_title:user %}
+        </div>
+      </div>
+
+      <div class="rounded-lg bg-[var(--color-surface)] p-6">
+        <form id="{{ collection_form_id }}" method="post" action="{{ collection_form_action }}?next={{ return_url|urlencode }}">
+          {% csrf_token %}
+          <input type="hidden" name="item_id" value="{{ item.id }}">
+          {{ form.item }}
+
+          <h2 class="mb-4 text-xl font-semibold text-[var(--color-text)]">{{ collection_form_heading }}</h2>
+
+          <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+            {% for field in form %}
+              {% if field.name != 'item' %}
+                {% if not collection_fields or field.name in collection_fields %}
+                  <div class="mb-5 {% if collection_fields and field.name == collection_fields.0 %}sm:col-span-2{% endif %}">
+                    <label class="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]"
+                           for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    <div class="relative">
+                      {% if field.field.widget.input_type == 'checkbox' %}
+                        <label class="flex items-center gap-2 text-[var(--color-text-secondary)]">
+                          {{ field|add_class:"h-4 w-4 rounded border-gray-600 bg-[var(--color-surface-strong)] text-indigo-500 focus:ring-[var(--color-accent)]" }}
+                          <span>{% translate "Yes" %}</span>
+                        </label>
+                      {% elif field.field.widget.input_type == 'number' %}
+                        {{ field|add_class:"w-full rounded-md border border-gray-600 bg-[var(--color-surface-strong)] p-2 pr-12 text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
+                        <div class="absolute inset-y-0 right-0 flex flex-col border-l border-gray-600">
+                          <button type="button"
+                                  class="flex-1 rounded-tr-md border-r border-t border-gray-600 px-2 hover:bg-gray-700 transition-colors"
+                                  onclick="this.parentElement.previousElementSibling.stepUp()">
+                            {% include "app/icons/chevron-up.svg" with classes="h-3.5 w-3.5" %}
+                          </button>
+                          <button type="button"
+                                  class="flex-1 rounded-br-md border-b border-r border-gray-600 px-2 hover:bg-gray-700 transition-colors"
+                                  onclick="this.parentElement.previousElementSibling.stepDown()">
+                            {% include "app/icons/chevron-down.svg" with classes="h-3.5 w-3.5" %}
+                          </button>
+                        </div>
+                      {% else %}
+                        {{ field|add_class:"w-full rounded-md border border-gray-600 bg-[var(--color-surface-strong)] p-2 text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" }}
+                      {% endif %}
+                    </div>
+                    {% if field.errors %}
+                      <p class="mt-1 text-sm text-red-400">{{ field.errors|join:", " }}</p>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          <div class="mt-6" id="custom-fields-host-{{ item.id }}">
+            {% include "app/components/collection_custom_fields.html" %}
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button type="submit"
+                    class="rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 transition-colors">
+              {{ collection_submit_label }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

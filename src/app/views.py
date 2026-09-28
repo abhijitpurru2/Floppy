@@ -87,6 +87,7 @@ from app.collection_views import (
     _item_has_collection_source_state,
     _most_common_quality_label,
     collection_add,
+    collection_entry_detail,
     collection_fields_save,
     collection_list,
     collection_modal,
@@ -94,6 +95,7 @@ from app.collection_views import (
     collection_remove,
     collection_remove_season,
     collection_status_api,
+    collection_statistics,
     collection_update,
 )
 from app.columns import (
